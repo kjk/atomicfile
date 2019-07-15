@@ -2,6 +2,7 @@ package atomicfile
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,6 +11,9 @@ import (
 var (
 	// ErrCancelled is returned by calls subsequent to Cancel()
 	ErrCancelled = errors.New("cancelled")
+
+	// ensure we implement desired interface
+	_ io.WriteCloser = &Writer{}
 )
 
 // Writer allows writing to a file atomically

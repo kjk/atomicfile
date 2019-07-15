@@ -7,3 +7,5 @@
 *.go text eol=lf
 .gitignore text eol=lf
 .gitattributes text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf

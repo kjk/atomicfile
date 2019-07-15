@@ -7,6 +7,11 @@ import (
 	"path/filepath"
 )
 
+var (
+	// ErrCancelled is returned by calls subsequent to Cancel()
+	ErrCancelled = errors.New("cancelled")
+)
+
 // Writer allows writing to a file atomically
 // i.e. if the while file is not written successfully, we make sure
 // to clean things up
@@ -60,7 +65,7 @@ func (w *Writer) Write(d []byte) (int, error) {
 // Use it to cleanup things when error happens outside of Write()
 // Cancel after Close is harmless to make it easier to use via defer
 func (w *Writer) Cancel() {
-	w.err = errors.New("cancelled")
+	w.err = ErrCancelled
 	w.Close()
 }
 

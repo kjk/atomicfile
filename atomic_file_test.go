@@ -3,6 +3,7 @@ package atomicfile
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -82,4 +83,33 @@ func TestWrite(t *testing.T) {
 		assertNoError(t, err)
 	}
 	os.Remove(dst)
+
+	{
+		// check that Cancel sets an error state
+		w, err := NewWriter(dst)
+		assertNoError(t, err)
+		w.Cancel()
+		_, err = w.Write(d)
+		if err != ErrCancelled {
+			t.Fatalf("expected err to be %v, got %v", ErrCancelled, err)
+		}
+		err = w.Close()
+		if err != ErrCancelled {
+			t.Fatalf("expected err to be %v, got %v", ErrCancelled, err)
+		}
+		err = w.Close()
+		if err != ErrCancelled {
+			t.Fatalf("expected err to be %v, got %v", ErrCancelled, err)
+		}
+		os.Remove(dst)
+	}
+
+	dst = filepath.Join("foo", "bar.txt")
+	{
+		w, err := NewWriter(dst)
+		assertError(t, err)
+		if w != nil {
+			t.Fatalf("expected w to be nil, got %v", w)
+		}
+	}
 }

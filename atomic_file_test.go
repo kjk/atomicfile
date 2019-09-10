@@ -55,7 +55,7 @@ func TestWrite(t *testing.T) {
 	dst := "atomic_file.go.copy"
 	_ = os.Remove(dst)
 	{
-		w, err := NewFile(dst)
+		w, err := New(dst)
 		assertNoError(t, err)
 		assertFileExists(t, w.tmpPath)
 		_ = w.Close()
@@ -67,7 +67,7 @@ func TestWrite(t *testing.T) {
 	assertNoError(t, err)
 
 	{
-		w, err := NewFile(dst)
+		w, err := New(dst)
 		assertNoError(t, err)
 		assertFileExists(t, w.tmpPath)
 		n, err := w.Write(d)
@@ -86,7 +86,7 @@ func TestWrite(t *testing.T) {
 
 	{
 		// check that Cancel sets an error state
-		w, err := NewFile(dst)
+		w, err := New(dst)
 		assertNoError(t, err)
 		w.Cancel()
 		_, err = w.Write(d)
@@ -106,7 +106,7 @@ func TestWrite(t *testing.T) {
 
 	dst = filepath.Join("foo", "bar.txt")
 	{
-		w, err := NewFile(dst)
+		w, err := New(dst)
 		assertError(t, err)
 		if w != nil {
 			t.Fatalf("expected w to be nil, got %v", w)

@@ -1,3 +1,3 @@
 module github.com/kjk/atomicfile
 
-go 1.12
+go 1.11

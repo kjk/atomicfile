@@ -1,9 +1,11 @@
 /*
 To write to files in a robust way we should:
 
-* handle error returned by `Close()`
-* handle error returned by `Write()`
-* remove partially written file if `Write()` or `Close()` returned an error
+- handle error returned by `Close()`
+
+- handle error returned by `Write()`
+
+- remove partially written file if `Write()` or `Close()` returned an error
 
 This logic is non-trivial.
 

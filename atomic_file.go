@@ -13,13 +13,13 @@ var (
 	ErrCancelled = errors.New("cancelled")
 
 	// ensure we implement desired interface
-	_ io.WriteCloser = &Writer{}
+	_ io.WriteCloser = &File{}
 )
 
-// Writer allows writing to a file atomically
+// File allows writing to a file atomically
 // i.e. if the while file is not written successfully, we make sure
 // to clean things up
-type Writer struct {
+type File struct {
 	dstPath string
 	tmpFile *os.File
 	err     error
@@ -27,8 +27,8 @@ type Writer struct {
 	tmpPath string // for debugging
 }
 
-// NewWriter creates new Writer
-func NewWriter(path string) (*Writer, error) {
+// NewFile creates new Writer
+func NewFile(path string) (*File, error) {
 	base, fName := filepath.Split(path)
 	if base == "" {
 		base = "."
@@ -42,7 +42,7 @@ func NewWriter(path string) (*Writer, error) {
 		return nil, err
 	}
 
-	return &Writer{
+	return &File{
 		dstPath: path,
 		tmpFile: tmpFile,
 		tmpPath: tmpFile.Name(),
@@ -50,7 +50,7 @@ func NewWriter(path string) (*Writer, error) {
 }
 
 // Write writes data to a file
-func (w *Writer) Write(d []byte) (int, error) {
+func (w *File) Write(d []byte) (int, error) {
 	if w.err != nil {
 		return 0, w.err
 	}
@@ -58,7 +58,7 @@ func (w *Writer) Write(d []byte) (int, error) {
 	if err != nil {
 		w.err = err
 		// cleanup i.e. delete temporary file
-		w.Close()
+		_ = w.Close()
 		return 0, err
 	}
 	return n, nil
@@ -68,14 +68,14 @@ func (w *Writer) Write(d []byte) (int, error) {
 // Destination file will not be created
 // Use it to cleanup things when error happens outside of Write()
 // Cancel after Close is harmless to make it easier to use via defer
-func (w *Writer) Cancel() {
+func (w *File) Cancel() {
 	w.err = ErrCancelled
-	w.Close()
+	_ = w.Close()
 }
 
 // Close closes the file. Can be called multiple times to make it
 // easier to use via defer
-func (w *Writer) Close() error {
+func (w *File) Close() error {
 	if w.tmpFile == nil {
 		// was already called, return same error as first Close()
 		return w.err
@@ -89,7 +89,10 @@ func (w *Writer) Close() error {
 	// - rename to destination failed
 	err := tmpFile.Close()
 
-	defer os.Remove(w.tmpPath) // ignoring error on this one
+	defer func() {
+		// ignoring error on this one
+		_ = os.Remove(w.tmpPath)
+	}()
 
 	// if there was an error during write, return that error
 	if w.err != nil {

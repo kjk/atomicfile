@@ -53,12 +53,12 @@ func assertIntEqual(t *testing.T, exp int, got int) {
 }
 func TestWrite(t *testing.T) {
 	dst := "atomic_file.go.copy"
-	os.Remove(dst)
+	_ = os.Remove(dst)
 	{
-		w, err := NewWriter(dst)
+		w, err := NewFile(dst)
 		assertNoError(t, err)
 		assertFileExists(t, w.tmpPath)
-		w.Close()
+		_ = w.Close()
 		assertFileExists(t, dst)
 		assertFileSizeEqual(t, dst, 0)
 		assertFileNotExists(t, w.tmpPath)
@@ -67,7 +67,7 @@ func TestWrite(t *testing.T) {
 	assertNoError(t, err)
 
 	{
-		w, err := NewWriter(dst)
+		w, err := NewFile(dst)
 		assertNoError(t, err)
 		assertFileExists(t, w.tmpPath)
 		n, err := w.Write(d)
@@ -82,11 +82,11 @@ func TestWrite(t *testing.T) {
 		err = w.Close()
 		assertNoError(t, err)
 	}
-	os.Remove(dst)
+	_ = os.Remove(dst)
 
 	{
 		// check that Cancel sets an error state
-		w, err := NewWriter(dst)
+		w, err := NewFile(dst)
 		assertNoError(t, err)
 		w.Cancel()
 		_, err = w.Write(d)
@@ -106,7 +106,7 @@ func TestWrite(t *testing.T) {
 
 	dst = filepath.Join("foo", "bar.txt")
 	{
-		w, err := NewWriter(dst)
+		w, err := NewFile(dst)
 		assertError(t, err)
 		if w != nil {
 			t.Fatalf("expected w to be nil, got %v", w)

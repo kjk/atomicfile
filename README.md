@@ -16,10 +16,10 @@ it atomically to a desired final name.
 The usage is:
 
 ```go
-w, err := atomicfile.NewWriter("foo.txt")
+w, err := atomicfile.New("foo.txt")
 if err != nil {
     // handle error
-    log.Fatalf("atomicfile.NewWriter() failed with %s\n", err)
+    log.Fatalf("atomicfile.New() failed with %s\n", err)
 }
 // calling Close() twice is a no-op
 defer w.Close()

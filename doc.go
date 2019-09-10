@@ -17,19 +17,15 @@ Package atomicfile makes it easy to get this logic right:
 			return err
 		}
 		// calling Close() twice is a no-op
-		defer func() {
-			_ = w.Close()
-		}()
+		defer w.Close()
+
 		_, err = w.Write(data)
 		if err != nil {
 			return err
 		}
-		err = w.Close()
-		if err != nil {
-			return err
-		}
-		return nil
+		return w.Close()
 	}
+
 
 To learn more see https://presstige.io/p/atomicfile-22143bf788b542fda2262ca7aee57ae4
 */

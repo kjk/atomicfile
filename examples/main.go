@@ -13,18 +13,13 @@ func writeToFileAtomically(filePath string, data []byte) error {
 		return err
 	}
 	// calling Close() twice is a no-op
-	defer func() {
-		_ = w.Close()
-	}()
+	defer w.Close()
+
 	_, err = w.Write(data)
 	if err != nil {
 		return err
 	}
-	err = w.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return w.Close()
 }
 
 func main() {

@@ -2,24 +2,25 @@ package main
 
 import (
 	"fmt"
-	"github.com/kjk/atomicfile"
 	"log"
 	"os"
+
+	"github.com/kjk/atomicfile"
 )
 
 func writeToFileAtomically(filePath string, data []byte) error {
-	w, err := atomicfile.New(filePath)
+	f, err := atomicfile.New(filePath)
 	if err != nil {
 		return err
 	}
 	// calling Close() twice is a no-op
-	defer w.Close()
+	defer f.Close()
 
-	_, err = w.Write(data)
+	_, err = f.Write(data)
 	if err != nil {
 		return err
 	}
-	return w.Close()
+	return f.Close()
 }
 
 func main() {

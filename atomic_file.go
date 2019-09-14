@@ -64,11 +64,24 @@ func (w *File) Write(d []byte) (int, error) {
 	return n, nil
 }
 
-// Cancel cancels writing and removes the temp file.
+func (w *File) alreadyClosed() bool {
+	return w.tmpFile == nil
+}
+
+// RemoveIfNotClosed cancels writing and removes the temp file.
 // Destination file will not be created.
-// Use it via defer if you want to ensure cleanup in case of a panic.
-// Cancel after Close is a no-op to make it easier to use via defer
-func (w *File) Cancel() {
+// Use it with defer to ensure cleanup in case of a panic on the
+// same goroutine that happens before Close.
+// RemoveIfNotClosed after Close is a no-op.
+func (w *File) RemoveIfNotClosed() {
+	if w == nil {
+		return
+	}
+	if w.alreadyClosed() {
+		// a no-op if already closed
+		return
+	}
+
 	w.err = ErrCancelled
 	_ = w.Close()
 }
@@ -76,8 +89,8 @@ func (w *File) Cancel() {
 // Close closes the file. Can be called multiple times to make it
 // easier to use via defer
 func (w *File) Close() error {
-	if w.tmpFile == nil {
-		// was already called, return same error as first Close()
+	if w.alreadyClosed() {
+		// return the first error we encountered
 		return w.err
 	}
 	tmpFile := w.tmpFile

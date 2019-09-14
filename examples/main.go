@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 
 	"github.com/kjk/atomicfile"
@@ -13,6 +14,7 @@ func writeToFileAtomically(filePath string, data []byte) error {
 	if err != nil {
 		return err
 	}
+
 	// calling Close() twice is a no-op
 	defer f.Close()
 
@@ -20,6 +22,31 @@ func writeToFileAtomically(filePath string, data []byte) error {
 	if err != nil {
 		return err
 	}
+	return f.Close()
+}
+
+func functionThatMightPanic() {
+	if rand.Intn(100) == 25 {
+		panic("we crashed")
+	}
+}
+
+func writeToFileAtomicallyRemoveOnPanic(filePath string, data []byte) error {
+	f, err := atomicfile.New(filePath)
+	if err != nil {
+		return err
+	}
+
+	// RemoveIfNotClosed() after Close() is a no-op
+	defer f.RemoveIfNotClosed()
+
+	_, err = f.Write(data)
+	if err != nil {
+		return err
+	}
+
+	functionThatMightPanic()
+
 	return f.Close()
 }
 

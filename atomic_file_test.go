@@ -108,7 +108,7 @@ func TestWriteWithPanic(t *testing.T) {
 }
 
 func writeWithPanicCancel(t *testing.T, f *File) {
-	defer f.Cancel()
+	defer f.RemoveIfNotClosed()
 
 	_, err := f.Write([]byte("foo"))
 	assertNoError(t, err)
@@ -174,7 +174,7 @@ func TestWrite(t *testing.T) {
 		// check that Cancel sets an error state
 		f, err := New(dst)
 		assertNoError(t, err)
-		f.Cancel()
+		f.RemoveIfNotClosed()
 		_, err = f.Write(d)
 		if err != ErrCancelled {
 			t.Fatalf("expected err to be %v, got %v", ErrCancelled, err)

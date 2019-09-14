@@ -163,9 +163,9 @@ func (f *File) Close() error {
 	errClose := tmpFile.Close()
 
 	// delete the temporary file in case of errors
-	dirRename := false
+	didRename := false
 	defer func() {
-		if !dirRename {
+		if !didRename {
 			// ignoring error on this one
 			_ = os.Remove(f.tmpPath)
 		}
@@ -184,7 +184,7 @@ func (f *File) Close() error {
 	if err == nil {
 		// this will over-write dstPath (if it exists)
 		err = os.Rename(f.tmpPath, f.dstPath)
-		dirRename = (err == nil)
+		didRename = (err == nil)
 	}
 
 	if f.err == nil {

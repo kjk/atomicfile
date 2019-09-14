@@ -89,10 +89,11 @@ func (w *File) Close() error {
 	// - Close() failed
 	// - rename to destination failed
 
-	//https://www.joeshaw.org/dont-defer-close-on-writable-files/
+	// https://www.joeshaw.org/dont-defer-close-on-writable-files/
 	errSync := tmpFile.Sync()
 	errClose := tmpFile.Close()
 
+	// always delete the temporary file
 	defer func() {
 		// ignoring error on this one
 		_ = os.Remove(w.tmpPath)
@@ -109,7 +110,7 @@ func (w *File) Close() error {
 	}
 
 	if err == nil {
-		// this might over-write dstPath
+		// this will over-write dstPath (if it exists)
 		err = os.Rename(w.tmpPath, w.dstPath)
 	}
 	w.err = err

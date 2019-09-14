@@ -78,6 +78,64 @@ func TestSimulateError(t *testing.T) {
 	}
 }
 
+func writeWithPanicClose(t *testing.T, f *File) {
+	defer f.Close()
+
+	_, err := f.Write([]byte("foo"))
+	assertNoError(t, err)
+	panic("simulating a crash")
+}
+
+func recoverWritePanic(t *testing.T, f *File) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("expected to panic")
+		}
+	}()
+
+	writeWithPanicClose(t, f)
+}
+
+func TestWriteWithPanic(t *testing.T) {
+	dst := "atomic_file.go.copy"
+	_ = os.Remove(dst)
+	f, err := New(dst)
+	assertNoError(t, err)
+	assertFileExists(t, f.tmpPath)
+	recoverWritePanic(t, f)
+	assertFileExists(t, dst)
+}
+
+func writeWithPanicCancel(t *testing.T, f *File) {
+	defer f.Cancel()
+
+	_, err := f.Write([]byte("foo"))
+	assertNoError(t, err)
+	panic("simulating a crash")
+}
+
+func recoverCancelPanic(t *testing.T, f *File) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatalf("expected to panic")
+		}
+	}()
+
+	writeWithPanicCancel(t, f)
+}
+
+func TestCancel(t *testing.T) {
+	dst := "atomic_file.go.copy"
+	_ = os.Remove(dst)
+	f, err := New(dst)
+	assertNoError(t, err)
+	assertFileExists(t, f.tmpPath)
+	recoverCancelPanic(t, f)
+	assertFileNotExists(t, f.tmpPath)
+}
+
 func TestWrite(t *testing.T) {
 	dst := "atomic_file.go.copy"
 	_ = os.Remove(dst)
@@ -90,6 +148,7 @@ func TestWrite(t *testing.T) {
 		assertFileSizeEqual(t, dst, 0)
 		assertFileNotExists(t, f.tmpPath)
 	}
+
 	d, err := ioutil.ReadFile("atomic_file.go")
 	assertNoError(t, err)
 

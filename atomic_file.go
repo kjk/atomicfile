@@ -65,9 +65,9 @@ func (w *File) Write(d []byte) (int, error) {
 }
 
 // Cancel cancels writing and removes the temp file.
-// Destination file will not be created
-// Use it to cleanup things when error happens outside of Write()
-// Cancel after Close is harmless to make it easier to use via defer
+// Destination file will not be created.
+// Use it via defer if you want to ensure cleanup in case of a panic.
+// Cancel after Close is a no-op to make it easier to use via defer
 func (w *File) Cancel() {
 	w.err = ErrCancelled
 	_ = w.Close()

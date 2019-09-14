@@ -1,6 +1,7 @@
 package atomicfile
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -51,65 +52,94 @@ func assertIntEqual(t *testing.T, exp int, got int) {
 		t.Fatalf("expected: %d, got: %d", exp, got)
 	}
 }
+
+func TestSimulateError(t *testing.T) {
+	// test cleanup after write
+	dst := "atomic_file.go.copy2"
+	_ = os.Remove(dst)
+	f, err := New(dst)
+	assertNoError(t, err)
+	assertFileExists(t, f.tmpPath)
+	_, err = f.Write([]byte("foo"))
+	assertNoError(t, err)
+	// simulate an error
+	errSimulated := errors.New("simiulated")
+	f.err = errSimulated
+	err = f.Close()
+	if err != errSimulated {
+		t.Fatalf("got unexpected error")
+	}
+	assertFileNotExists(t, f.tmpPath)
+	assertFileNotExists(t, dst)
+	// on second Close() should get the same error
+	err = f.Close()
+	if err != errSimulated {
+		t.Fatalf("got unexpected error")
+	}
+}
+
 func TestWrite(t *testing.T) {
 	dst := "atomic_file.go.copy"
 	_ = os.Remove(dst)
 	{
-		w, err := New(dst)
+		f, err := New(dst)
 		assertNoError(t, err)
-		assertFileExists(t, w.tmpPath)
-		_ = w.Close()
+		assertFileExists(t, f.tmpPath)
+		_ = f.Close()
 		assertFileExists(t, dst)
 		assertFileSizeEqual(t, dst, 0)
-		assertFileNotExists(t, w.tmpPath)
+		assertFileNotExists(t, f.tmpPath)
 	}
 	d, err := ioutil.ReadFile("atomic_file.go")
 	assertNoError(t, err)
 
 	{
-		w, err := New(dst)
+		f, err := New(dst)
 		assertNoError(t, err)
-		assertFileExists(t, w.tmpPath)
-		n, err := w.Write(d)
+		assertFileExists(t, f.tmpPath)
+		n, err := f.Write(d)
 		assertNoError(t, err)
 		assertIntEqual(t, n, len(d))
-		assertFileExists(t, w.tmpPath)
-		err = w.Close()
+		assertFileExists(t, f.tmpPath)
+		err = f.Close()
 		assertNoError(t, err)
-		assertFileNotExists(t, w.tmpPath)
+		assertFileNotExists(t, f.tmpPath)
 		assertFileSizeEqual(t, dst, int64(len(d)))
 		// calling Close twice is a no-op
-		err = w.Close()
+		err = f.Close()
 		assertNoError(t, err)
 	}
 	_ = os.Remove(dst)
 
 	{
 		// check that Cancel sets an error state
-		w, err := New(dst)
+		f, err := New(dst)
 		assertNoError(t, err)
-		w.Cancel()
-		_, err = w.Write(d)
+		f.Cancel()
+		_, err = f.Write(d)
 		if err != ErrCancelled {
 			t.Fatalf("expected err to be %v, got %v", ErrCancelled, err)
 		}
-		err = w.Close()
+		err = f.Close()
 		if err != ErrCancelled {
 			t.Fatalf("expected err to be %v, got %v", ErrCancelled, err)
 		}
-		err = w.Close()
+		err = f.Close()
 		if err != ErrCancelled {
 			t.Fatalf("expected err to be %v, got %v", ErrCancelled, err)
 		}
 		os.Remove(dst)
 	}
 
+	// we can't create files in directories that don't exist
+	// so verify we do an early check (no point writing to a file
+	// if it couldn't be created at the end)
 	dst = filepath.Join("foo", "bar.txt")
 	{
-		w, err := New(dst)
+		f, err := New(dst)
 		assertError(t, err)
-		if w != nil {
-			t.Fatalf("expected w to be nil, got %v", w)
+		if f != nil {
+			t.Fatalf("expected w to be nil, got %v", f)
 		}
 	}
 }

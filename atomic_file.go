@@ -27,7 +27,7 @@ type File struct {
 	tmpPath string // for debugging
 }
 
-// Newd creates new File
+// New creates new File
 func New(path string) (*File, error) {
 	base, fName := filepath.Split(path)
 	if base == "" {

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var (
@@ -49,52 +50,107 @@ func New(path string) (*File, error) {
 	}, nil
 }
 
+func (f *File) handleError(err error) error {
+	if err == nil {
+		return nil
+	}
+	// remember the first errro
+	if f.err == nil {
+		f.err = err
+	}
+	// cleanup i.e. delete temporary file
+	_ = f.Close()
+	return err
+}
+
 // Write writes data to a file
-func (w *File) Write(d []byte) (int, error) {
-	if w.err != nil {
-		return 0, w.err
+func (f *File) Write(d []byte) (int, error) {
+	if f.err != nil {
+		return 0, f.err
 	}
-	n, err := w.tmpFile.Write(d)
-	if err != nil {
-		w.err = err
-		// cleanup i.e. delete temporary file
-		_ = w.Close()
-		return 0, err
-	}
-	return n, nil
+	n, err := f.tmpFile.Write(d)
+	return n, f.handleError(err)
 }
 
-func (w *File) alreadyClosed() bool {
-	return w.tmpFile == nil
+func (f *File) SetWriteDeadline(t time.Time) error {
+	if f.err != nil {
+		return f.err
+	}
+	err := f.tmpFile.SetWriteDeadline(t)
+	return f.handleError(err)
 }
 
-// RemoveIfNotClosed cancels writing and removes the temp file.
-// Destination file will not be created.
+func (f *File) Sync() error {
+	if f.err != nil {
+		return f.err
+	}
+	err := f.tmpFile.Sync()
+	return f.handleError(err)
+}
+
+func (f *File) Truncate(size int64) error {
+	if f.err != nil {
+		return f.err
+	}
+	err := f.tmpFile.Truncate(size)
+	return f.handleError(err)
+}
+
+func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
+	if f.err != nil {
+		return 0, f.err
+	}
+	ret, err = f.tmpFile.Seek(offset, whence)
+	return ret, f.handleError(err)
+}
+
+func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
+	if f.err != nil {
+		return 0, f.err
+	}
+	n, err = f.tmpFile.WriteAt(b, off)
+	return n, f.handleError(err)
+}
+
+func (f *File) WriteString(s string) (n int, err error) {
+	if f.err != nil {
+		return 0, f.err
+	}
+	n, err = f.tmpFile.WriteString(s)
+	return n, f.handleError(err)
+}
+
+func (f *File) alreadyClosed() bool {
+	return f.tmpFile == nil
+}
+
+// RemoveIfNotClosed removes the temp file if we didn't Close
+// the file yet. Destination file will not be created.
 // Use it with defer to ensure cleanup in case of a panic on the
 // same goroutine that happens before Close.
 // RemoveIfNotClosed after Close is a no-op.
-func (w *File) RemoveIfNotClosed() {
-	if w == nil {
+func (f *File) RemoveIfNotClosed() {
+	if f == nil {
 		return
 	}
-	if w.alreadyClosed() {
+	if f.alreadyClosed() {
 		// a no-op if already closed
 		return
 	}
 
-	w.err = ErrCancelled
-	_ = w.Close()
+	f.err = ErrCancelled
+	_ = f.Close()
 }
 
 // Close closes the file. Can be called multiple times to make it
 // easier to use via defer
-func (w *File) Close() error {
-	if w.alreadyClosed() {
+func (f *File) Close() error {
+	if f.alreadyClosed() {
 		// return the first error we encountered
-		return w.err
+		return f.err
 	}
-	tmpFile := w.tmpFile
-	w.tmpFile = nil
+	tmpFile := f.tmpFile
+	f.tmpFile = nil
 
 	// cleanup things (delete temporary files) if:
 	// - there was an error in Write()
@@ -109,12 +165,12 @@ func (w *File) Close() error {
 	// always delete the temporary file
 	defer func() {
 		// ignoring error on this one
-		_ = os.Remove(w.tmpPath)
+		_ = os.Remove(f.tmpPath)
 	}()
 
 	// if there was an error during write, return that error
-	if w.err != nil {
-		return w.err
+	if f.err != nil {
+		return f.err
 	}
 
 	err := errSync
@@ -124,10 +180,10 @@ func (w *File) Close() error {
 
 	if err == nil {
 		// this will over-write dstPath (if it exists)
-		err = os.Rename(w.tmpPath, w.dstPath)
+		err = os.Rename(f.tmpPath, f.dstPath)
 	}
-	if w.err == nil {
-		w.err = err
+	if f.err == nil {
+		f.err = err
 	}
-	return w.err
+	return f.err
 }

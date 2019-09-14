@@ -113,6 +113,8 @@ func (w *File) Close() error {
 		// this will over-write dstPath (if it exists)
 		err = os.Rename(w.tmpPath, w.dstPath)
 	}
-	w.err = err
+	if w.err == nil {
+		w.err = err
+	}
 	return w.err
 }

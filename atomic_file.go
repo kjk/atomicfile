@@ -85,9 +85,13 @@ func (w *File) Close() error {
 
 	// cleanup things (delete temporary files) if:
 	// - there was an error in Write()
+	// - thre was an error in Sync()
 	// - Close() failed
 	// - rename to destination failed
-	err := tmpFile.Close()
+
+	//https://www.joeshaw.org/dont-defer-close-on-writable-files/
+	errSync := tmpFile.Sync()
+	errClose := tmpFile.Close()
 
 	defer func() {
 		// ignoring error on this one
@@ -97,6 +101,11 @@ func (w *File) Close() error {
 	// if there was an error during write, return that error
 	if w.err != nil {
 		return w.err
+	}
+
+	err := errSync
+	if err == nil {
+		err = errClose
 	}
 
 	if err == nil {

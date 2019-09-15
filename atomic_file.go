@@ -22,6 +22,7 @@ var (
 // to clean things up
 type File struct {
 	dstPath string
+	dir     string
 	tmpFile *os.File
 	err     error
 
@@ -30,21 +31,23 @@ type File struct {
 
 // New creates new File
 func New(path string) (*File, error) {
-	base, fName := filepath.Split(path)
-	if base == "" {
-		base = "."
+	dir, fName := filepath.Split(path)
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, err
 	}
 	if fName == "" {
 		return nil, &os.PathError{Op: "open", Path: path, Err: os.ErrInvalid}
 	}
 
-	tmpFile, err := ioutil.TempFile(base, fName)
+	tmpFile, err := ioutil.TempFile(dir, fName)
 	if err != nil {
 		return nil, err
 	}
 
 	return &File{
 		dstPath: path,
+		dir:     dir,
 		tmpFile: tmpFile,
 		tmpPath: tmpFile.Name(),
 	}, nil
@@ -182,6 +185,18 @@ func (f *File) Close() error {
 	}
 
 	if err == nil {
+		// for extra protection against crashes elsewhere,
+		// sync directory before and after rename
+		// ignore errors as those are a nice have
+		fdir, _ := os.Open(f.dir)
+		if fdir != nil {
+			defer func() {
+				_ = fdir.Sync()
+				fdir.Close()
+			}()
+			_ = fdir.Sync()
+		}
+
 		// this will over-write dstPath (if it exists)
 		err = os.Rename(f.tmpPath, f.dstPath)
 		didRename = (err == nil)

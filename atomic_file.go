@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+// Some references:
+// - https://www.slideshare.net/nan1nan1/eat-my-data
+// - https://lwn.net/Articles/457667/
+
 var (
 	// ErrCancelled is returned by calls subsequent to Cancel()
 	ErrCancelled = errors.New("cancelled")
@@ -185,21 +189,17 @@ func (f *File) Close() error {
 	}
 
 	if err == nil {
-		// for extra protection against crashes elsewhere,
-		// sync directory before and after rename
-		// ignore errors as those are a nice have
-		fdir, _ := os.Open(f.dir)
-		if fdir != nil {
-			defer func() {
-				_ = fdir.Sync()
-				fdir.Close()
-			}()
-			_ = fdir.Sync()
-		}
-
 		// this will over-write dstPath (if it exists)
 		err = os.Rename(f.tmpPath, f.dstPath)
 		didRename = (err == nil)
+		// for extra protection against crashes elsewhere,
+		// sync directory after rename
+		fdir, _ := os.Open(f.dir)
+		if fdir != nil {
+			// ignore errors as those are a nice have, not must have
+			_ = fdir.Sync()
+			_ = fdir.Close()
+		}
 	}
 
 	if f.err == nil {

@@ -6,5 +6,5 @@ The file is created only if all writes succeeded.
 
 To learn how to use it:
 
-- [full docs](https://presstige.io/p/atomicfile-robustly-writing-to-files-in-Go-22143bf788b542fda2262ca7aee57ae4)
-- [api docs in godoc](https://godoc.org/github.com/kjk/atomicfile)
+- full docs: https://blog.kowalczyk.info/article/90f01e0e24924f6c8ed428f065c0016a/atomicfile-robustly-writing-to-a-file-in-go.html
+- api docs: ttps://pkg.go.dev/github.com/kjk/atomicfile

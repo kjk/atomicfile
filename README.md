@@ -1,4 +1,4 @@
-# atomicfile
+## This has moved to https://github.com/kjk/common (`atomicfile`)
 
 A Go library to help create files atomically.
 
